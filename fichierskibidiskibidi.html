@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>SKIBIDI ENT 🔵</title>
+<style>
+body{font-family:Arial;background:#e8f0ff;margin:0}
+header{background:#0b5ed7;color:white;padding:10px;text-align:center;font-size:24px}
+.box{max-width:1000px;margin:20px auto;background:white;border-radius:10px;padding:15px}
+button{background:#0b5ed7;color:white;border:none;padding:6px 10px;border-radius:5px;margin:2px}
+.tab{display:inline-block;margin:5px;padding:6px 10px;background:#cfe2ff;border-radius:5px;cursor:pointer}
+.tab.active{background:white;border-bottom:3px solid #0b5ed7}
+.star{color:gold;font-size:18px}
+.trash{cursor:pointer;color:red}
+textarea{width:300px;height:50px;display:block;margin-top:5px;margin-bottom:5px}
+</style>
+</head>
+<body>
+
+<header>📚 SKIBIDI ENT 🔵</header>
+
+<div class="box" id="login">
+  <h3>Connexion</h3>
+  <input id="id" placeholder="Identifiant">
+  <input id="pw" type="password" placeholder="Mot de passe">
+  <button onclick="connect()">Se connecter</button>
+  <p id="err" style="color:red"></p>
+</div>
+
+<div class="box" id="app" style="display:none">
+  <div id="tabs"></div>
+  <div id="content"></div>
+</div>
+
+<script>
+const users={
+  sahli:{pass:"sahli123",role:"prof",name:"M. Sahli"},
+  bouhmadi:{pass:"bouhmadi123",role:"prof",name:"M. Bouhmadi"},
+  ouachaou:{pass:"secretaire",role:"secretaire",name:"M. Ouachaou"},
+  nassim:{pass:"nassim",role:"eleve",name:"Nassim"},
+  arthur:{pass:"arthur",role:"eleve",name:"Arthur"},
+  sarah:{pass:"sarah",role:"eleve",name:"Sarah"},
+  rayan:{pass:"rayan",role:"eleve",name:"Rayan"},
+  nathan:{pass:"nathan",role:"eleve",name:"Nathan"},
+  aymend:{pass:"aymend",role:"eleve",name:"Aymen Dib"},
+  aymenf:{pass:"aymenf",role:"eleve",name:"Aymen Ferhane"},
+  nael:{pass:"nael",role:"eleve",name:"Nael"}
+};
+
+let current=null;
+let data=JSON.parse(localStorage.getItem("skibidiData")||"{}");
+if(!data.notes)data.notes={};
+if(!data.stars)data.stars={};
+if(!data.appel)data.appel={};
+if(!data.validation)data.validation={};
+if(!data.missions)data.missions=[];
+if(!data.edtCancel)data.edtCancel={};
+if(!data.mots)data.mots={};
+
+const edt={
+  "Lundi":["10h05-10h25","15h00-15h20"],
+  "Mardi":["10h05-10h25"],
+  "Mercredi":["10h05-10h25"],
+  "Jeudi":["10h05-10h25","15h00-15h20"],
+  "Vendredi":["10h05-10h25"]
+};
+
+function save(){localStorage.setItem("skibidiData",JSON.stringify(data));}
+function eleves(){return Object.keys(users).filter(u=>users[u].role=="eleve");}
+
+function connect(){
+  if(!users[id.value]||users[id.value].pass!=pw.value){err.textContent="Erreur";return;}
+  current=id.value;
+  login.style.display="none";
+  app.style.display="block";
+  buildTabs();
+}
+
+function buildTabs(){
+  let r=users[current].role;
+  let t=["Notes","Étoiles","Missions","Emploi du temps","Appel"];
+  if(r=="secretaire") t=["Justification"];
+  if(r=="prof" || current=="sahli" || r=="eleve") t.push("Mots"); // tous les élèves voient l'onglet
+  let h="";
+  t.forEach(x=>h+=`<span class="tab" onclick="openTab('${x}')">${x}</span>`);
+  tabs.innerHTML=h;
+  openTab(t[0]);
+}
+
+function openTab(n){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  [...tabs.children].find(x=>x.textContent==n).classList.add("active");
+  if(n=="Notes")notesTab();
+  if(n=="Étoiles")starsTab();
+  if(n=="Missions")missionsTab();
+  if(n=="Emploi du temps")edtTab();
+  if(n=="Appel")appelTab();
+  if(n=="Justification")justifTab();
+  if(n=="Mots")buildMotTab();
+}
+
+/* NOTES */
+function notesTab(){
+  let h="<h3>📊 Notes</h3>";
+  if(users[current].role=="prof"){
+    h+=`<select id="e">${eleves().map(e=>`<option>${e}</option>`).join("")}</select>
+        <input id="v" placeholder="15/20">
+        <button onclick="addNote()">➕</button>
+        <button onclick="resetNotes()">🗑️ Reset</button>`;
+  }
+  h+="<ul>";
+  for(let e in data.notes){
+    if(current==e||users[current].role!="eleve")
+      data.notes[e].forEach((n,i)=>h+=`<li>${users[e].name} : ${n} ${users[current].role=="prof"?`<span class="trash" onclick="delNote('${e}',${i})">🗑️</span>`:""}</li>`);
+  }
+  h+="</ul>";
+  content.innerHTML=h;
+}
+function addNote(){ if(!data.notes[e.value])data.notes[e.value]=[]; data.notes[e.value].push(v.value); save(); notesTab();}
+function delNote(e,i){data.notes[e].splice(i,1); save(); notesTab();}
+function resetNotes(){data.notes={}; save(); notesTab();}
+
+/* ÉTOILES */
+function starsTab(){
+  let h="<h3>⭐ Étoiles</h3>";
+  if(users[current].role=="prof"){
+    h+=`<select id="e">${eleves().map(e=>`<option>${e}</option>`).join("")}</select>
+        <select id="v"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+        <button onclick="addStar()">➕</button>
+        <button onclick="resetStars()">🗑️ Reset</button>`;
+  }
+  h+="<ul>";
+  for(let e in data.stars){
+    if(current==e||users[current].role!="eleve")
+      data.stars[e].forEach((s,i)=>h+=`<li>${users[e].name} : <span class="star">${"★".repeat(s)}</span> ${users[current].role=="prof"?`<span class="trash" onclick="delStar('${e}',${i})">🗑️</span>`:""}</li>`);
+  }
+  h+="</ul>";
+  content.innerHTML=h;
+}
+function addStar(){ if(!data.stars[e.value])data.stars[e.value]=[]; data.stars[e.value].push(parseInt(v.value)); save(); starsTab();}
+function delStar(e,i){data.stars[e].splice(i,1); save(); starsTab();}
+function resetStars(){data.stars={}; save(); starsTab();}
+
+/* MISSIONS */
+function missionsTab(){
+  let h="<h3>📚 Missions</h3>";
+  if(users[current].role=="prof"){
+    h+=`<input id="m"><button onclick="addMission()">➕</button>`;
+  }
+  h+="<ul>"+data.missions.map((m,i)=>`<li>${m} ${users[current].role=="prof"?`<span class="trash" onclick="delMission(${i})">🗑️</span>`:""}</li>`).join("")+"</ul>";
+  content.innerHTML=h;
+}
+function addMission(){data.missions.push(m.value); save(); missionsTab();}
+function delMission(i){data.missions.splice(i,1); save(); missionsTab();}
+
+/* EDT */
+function edtTab(){
+  let h="<h3>🗓️ Emploi du temps</h3><ul>";
+  for(let j in edt){
+    let ann=data.edtCancel[j];
+    h+=`<li>${j} : ${ann?"❌ Annulé":edt[j].join(" / ")}
+    ${users[current].role=="prof"?(ann?`<button onclick="retablir('${j}')">🔄</button>`:`<button onclick="annuler('${j}')">❌</button>`):""}</li>`;
+  }
+  h+="</ul>";
+  content.innerHTML=h;
+}
+function annuler(j){data.edtCancel[j]=true; save(); edtTab();}
+function retablir(j){delete data.edtCancel[j]; save(); edtTab();}
+
+/* APPEL */
+function appelTab(){
+  let h="<h3>📝 Appel</h3>";
+  if(users[current].role=="prof"){
+    h+=`<select id="e">${eleves().map(e=>`<option>${e}</option>`).join("")}</select>
+        <select id="v"><option>Présent</option><option>Absent</option><option>Retard</option></select>
+        <button onclick="setAppel()">Valider</button>`;
+  }
+  h+="<ul>";
+  eleves().forEach(e=>{
+    if(current==e||users[current].role!="eleve"){
+      let st=data.appel[e]||"-";
+      let val=data.validation[e]||"⏳ En attente";
+      h+=`<li>${users[e].name} : ${st} (${val})</li>`;
+    }
+  });
+  h+="</ul>";
+  content.innerHTML=h;
+}
+function setAppel(){data.appel[e.value]=v.value; data.validation[e.value]="⏳ En attente"; save(); appelTab();}
+
+/* SECRETAIRE */
+function justifTab(){
+  let h="<h3>📄 Justification d'absence</h3><ul>";
+  for(let e in data.appel){
+    h+=`<li>${users[e].name} : ${data.appel[e]} 
+    <button onclick="valide('${e}')">✅</button>
+    <button onclick="refuse('${e}')">❌</button></li>`;
+  }
+  h+="</ul>";
+  content.innerHTML=h;
+}
+function valide(e){data.validation[e]="Validé"; save(); justifTab();}
+function refuse(e){data.validation[e]="Refusé"; save(); justifTab();}
+
+/* --- MOTS DANS LE CARNET SECURISE + Poubelle M. Sahli --- */
+function buildMotTab(){
+  let h="<h3>✉️ Mots dans le carnet</h3>";
+  if(users[current].role=="prof" || current=="sahli"){
+    h+=`<select id="motEleve">${eleves().map(e=>`<option>${e}</option>`).join("")}</select>
+        <textarea id="motTexte" placeholder="Texte du mot"></textarea>
+        <button onclick="envoyerMot()">Envoyer ✉️</button>`;
+  }
+  h+="<ul id='motsList'></ul>";
+  content.innerHTML=h;
+  showMots();
+}
+
+function showMots(){
+  let ul=document.getElementById("motsList");
+  if(!ul) return;
+  ul.innerHTML="";
+  for(let e of eleves()){
+    let mot=JSON.parse(localStorage.getItem("mot_"+e) || "null");
+    if(mot){
+      let li=document.createElement("li");
+      let role=users[current].role;
+      let statut=mot.statut;
+      let text=`${users[e].name} : "${mot.texte}" - ${statut}`;
+
+      // Poubelle uniquement pour M. Sahli
+      if(current=="sahli"){
+        text=`<span class="trash" onclick="delMot('${e}')">🗑️</span> ` + text;
+      }
+
+      // Prof peut valider/refuser si mot signé
+      if((role=="prof" || current=="sahli") && statut=="Signé, en attente validation prof"){
+        text+=` <button onclick="valideMot('${e}')">✅ Valider</button>
+                <button onclick="refuseMot('${e}')">❌ Refuser</button>`;
+      }
+
+      // Élève peut signer seulement si c’est son mot et pas encore signé
+      if(role=="eleve" && current==e && statut=="Pas encore signé"){
+        text+=` <button onclick="signerMot('${e}')">Signer ✍️</button>`;
+      }
+
+      li.innerHTML=text;
+      ul.appendChild(li);
+    }
+  }
+}
+
+function envoyerMot(){
+  let e=document.getElementById("motEleve").value;
+  let texte=document.getElementById("motTexte").value.trim();
+  if(!texte) return alert("Écrire un mot !");
+  let mot={texte:texte, statut:"Pas encore signé"};
+  localStorage.setItem("mot_"+e, JSON.stringify(mot));
+  showMots();
+  alert("✅ Mot envoyé à "+users[e].name);
+}
+
+function signerMot(eleve){
+  let mot=JSON.parse(localStorage.getItem("mot_"+eleve));
+  if(!mot) return;
+  mot.statut="Signé, en attente validation prof";
+  localStorage.setItem("mot_"+eleve, JSON.stringify(mot));
+  showMots();
+  alert("✅ Mot signé par l'élève "+users[eleve].name);
+}
+
+function valideMot(eleve){
+  let mot=JSON.parse(localStorage.getItem("mot_"+eleve));
+  if(!mot) return;
+  mot.statut="Validé ✅";
+  localStorage.setItem("mot_"+eleve, JSON.stringify(mot));
+  showMots();
+  alert("✅ Mot validé par le prof");
+}
+
+function refuseMot(eleve){
+  let mot=JSON.parse(localStorage.getItem("mot_"+eleve));
+  if(!mot) return;
+  mot.statut="Refusé ❌";
+  localStorage.setItem("mot_"+eleve, JSON.stringify(mot));
+  showMots();
+  alert("❌ Mot refusé par le prof");
+}
+
+// Fonction pour supprimer mot (poubelle M. Sahli)
+function delMot(eleve){
+  localStorage.removeItem("mot_"+eleve);
+  showMots();
+  alert("🗑️ Mot supprimé pour "+users[eleve].name);
+}
+
+</script>
+</body>
+</html>
