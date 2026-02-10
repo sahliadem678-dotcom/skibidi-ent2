@@ -1,7 +1,25 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyByVvMLoofMMX82lT7r8zaJa3rSzDS9tjI",
+    authDomain: "skibidi-ent.firebaseapp.com",
+    databaseURL: "https://skibidi-ent-default-rtdb.firebaseio.com",
+    projectId: "skibidi-ent",
+    storageBucket: "skibidi-ent.appspot.com",
+    messagingSenderId: "677948546573",
+    appId: "1:677948546573:web:cf42efd3386dd7047c3f44"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+</script>">
+
 <title>SKIBIDI ENT 🔵</title>
 <style>
 body{font-family:Arial;background:#e8f0ff;margin:0}
@@ -48,14 +66,17 @@ const users={
 };
 
 let current=null;
-let data=JSON.parse(localStorage.getItem("skibidiData")||"{}");
-if(!data.notes)data.notes={};
-if(!data.stars)data.stars={};
-if(!data.appel)data.appel={};
-if(!data.validation)data.validation={};
-if(!data.missions)data.missions=[];
-if(!data.edtCancel)data.edtCancel={};
-if(!data.mots)data.mots={};
+let data=db.ref("/").on("value", snap => {
+  data = snap.val() || {};
+
+  if(!data.notes) data.notes = {};
+  if(!data.stars) data.stars = {};
+  if(!data.appel) data.appel = {};
+  if(!data.validation) data.validation = {};
+  if(!data.missions) data.missions = [];
+  if(!data.edtCancel) data.edtCancel = {};
+  if(!data.mots) data.mots = {};
+});
 
 const edt={
   "Lundi":["10h05-10h25","15h00-15h20"],
@@ -296,3 +317,4 @@ function delMot(eleve){
 </script>
 </body>
 </html>
+
